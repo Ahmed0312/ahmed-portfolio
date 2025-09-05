@@ -1,300 +1,486 @@
+// Modern Portfolio JavaScript with Dark Mode Support
+
 // DOM Elements
 const hamburger = document.getElementById('hamburger');
 const navMenu = document.getElementById('nav-menu');
 const navLinks = document.querySelectorAll('.nav-link');
-// const contactForm = document.getElementById('contactForm'); // Removed - form no longer exists
+const themeToggle = document.getElementById('theme-toggle');
+const contactForm = document.getElementById('contactForm');
 
-// Mobile Navigation Toggle
-hamburger.addEventListener('click', () => {
-    hamburger.classList.toggle('active');
-    navMenu.classList.toggle('active');
-});
+// Theme Management
+class ThemeManager {
+  constructor() {
+    this.theme = localStorage.getItem('theme') || 'dark';
+    this.init();
+  }
 
-// Close mobile menu when clicking on a link
-navLinks.forEach(link => {
-    link.addEventListener('click', () => {
-        hamburger.classList.remove('active');
-        navMenu.classList.remove('active');
+  init() {
+    this.applyTheme();
+    this.setupEventListeners();
+  }
+
+  applyTheme() {
+    document.documentElement.setAttribute('data-theme', this.theme);
+    const icon = themeToggle.querySelector('i');
+    
+    if (this.theme === 'dark') {
+      icon.className = 'fas fa-sun';
+    } else {
+      icon.className = 'fas fa-moon';
+    }
+  }
+
+  toggleTheme() {
+    this.theme = this.theme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('theme', this.theme);
+    this.applyTheme();
+  }
+
+  setupEventListeners() {
+    themeToggle.addEventListener('click', () => this.toggleTheme());
+  }
+}
+
+// Initialize theme manager
+const themeManager = new ThemeManager();
+
+// Mobile Navigation
+class MobileNavigation {
+  constructor() {
+    this.hamburger = hamburger;
+    this.navMenu = navMenu;
+    this.navLinks = navLinks;
+    this.init();
+  }
+
+  init() {
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    this.hamburger.addEventListener('click', () => this.toggleMenu());
+    
+    this.navLinks.forEach(link => {
+      link.addEventListener('click', () => this.closeMenu());
     });
-});
 
-// Smooth scrolling for anchor links
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!this.navMenu.contains(e.target) && !this.hamburger.contains(e.target)) {
+        this.closeMenu();
+      }
+    });
+  }
+
+  toggleMenu() {
+    this.hamburger.classList.toggle('active');
+    this.navMenu.classList.toggle('active');
+  }
+
+  closeMenu() {
+    this.hamburger.classList.remove('active');
+    this.navMenu.classList.remove('active');
+  }
+}
+
+// Initialize mobile navigation
+const mobileNav = new MobileNavigation();
+
+// Smooth Scrolling
+class SmoothScrolling {
+  constructor() {
+    this.init();
+  }
+
+  init() {
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', (e) => {
         e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
+        const target = document.querySelector(anchor.getAttribute('href'));
         if (target) {
-            const offsetTop = target.offsetTop - 80; // Account for fixed navbar
-            window.scrollTo({
-                top: offsetTop,
-                behavior: 'smooth'
-            });
+          const offsetTop = target.offsetTop - 80;
+          window.scrollTo({
+            top: offsetTop,
+            behavior: 'smooth'
+          });
         }
+      });
     });
-});
+  }
+}
 
-// Active navigation link highlighting
-window.addEventListener('scroll', () => {
-    const sections = document.querySelectorAll('section');
+// Initialize smooth scrolling
+const smoothScrolling = new SmoothScrolling();
+
+// Active Navigation Link Highlighting
+class NavigationHighlighter {
+  constructor() {
+    this.navLinks = navLinks;
+    this.sections = document.querySelectorAll('section');
+    this.init();
+  }
+
+  init() {
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    window.addEventListener('scroll', () => this.highlightActiveLink());
+  }
+
+  highlightActiveLink() {
     const scrollPosition = window.scrollY + 100;
 
-    sections.forEach(section => {
-        const sectionTop = section.offsetTop;
-        const sectionHeight = section.offsetHeight;
-        const sectionId = section.getAttribute('id');
+    this.sections.forEach(section => {
+      const sectionTop = section.offsetTop;
+      const sectionHeight = section.offsetHeight;
+      const sectionId = section.getAttribute('id');
 
-        if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
-            // Remove active class from all nav links
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            // Add active class to current section's nav link
-            const activeLink = document.querySelector(`.nav-link[href="#${sectionId}"]`);
-            if (activeLink) {
-                activeLink.classList.add('active');
-            }
+      if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+        this.navLinks.forEach(link => link.classList.remove('active'));
+        
+        const activeLink = document.querySelector(`.nav-link[href="#${sectionId}"]`);
+        if (activeLink) {
+          activeLink.classList.add('active');
         }
+      }
     });
-});
-
-// Contact form handling (removed - form no longer exists)
-// contactForm.addEventListener('submit', function(e) {
-//     e.preventDefault();
-//     
-//     // Get form data
-//     const formData = new FormData(this);
-//     const name = formData.get('name');
-//     const email = formData.get('email');
-//     const subject = formData.get('subject');
-//     const message = formData.get('message');
-//     
-//     // Simple form validation
-//     if (!name || !email || !subject || !message) {
-//         showNotification('Please fill in all fields.', 'error');
-//         return;
-//     }
-//     
-//     if (!isValidEmail(email)) {
-//         showNotification('Please enter a valid email address.', 'error');
-//         return;
-//     }
-//     
-//     // Simulate form submission
-//     showNotification('Thank you for your message! I will get back to you soon.', 'success');
-//     this.reset();
-// });
-
-// Email validation function
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  }
 }
 
-// Notification system
-function showNotification(message, type) {
-    // Remove existing notifications
-    const existingNotification = document.querySelector('.notification');
-    if (existingNotification) {
-        existingNotification.remove();
-    }
-    
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
-    
-    // Add styles
-    notification.style.cssText = `
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        padding: 1rem 1.5rem;
-        border-radius: 5px;
-        color: white;
-        font-weight: 600;
-        z-index: 10000;
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
-        max-width: 300px;
-        word-wrap: break-word;
-    `;
-    
-    // Set background color based on type
-    if (type === 'success') {
-        notification.style.backgroundColor = '#27ae60';
-    } else if (type === 'error') {
-        notification.style.backgroundColor = '#e74c3c';
-    }
-    
-    // Add to document
-    document.body.appendChild(notification);
-    
-    // Animate in
-    setTimeout(() => {
-        notification.style.transform = 'translateX(0)';
-    }, 100);
-    
-    // Remove after 5 seconds
-    setTimeout(() => {
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    }, 5000);
-}
+// Initialize navigation highlighter
+const navHighlighter = new NavigationHighlighter();
 
-// Intersection Observer for animations
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-};
 
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
+// Intersection Observer for Animations
+class AnimationObserver {
+  constructor() {
+    this.observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+    this.init();
+  }
+
+  init() {
+    this.setupObserver();
+    this.observeElements();
+  }
+
+  setupObserver() {
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
         if (entry.isIntersecting) {
-            entry.target.classList.add('fade-in');
+          entry.target.classList.add('fade-in');
+          this.observer.unobserve(entry.target);
         }
-    });
-}, observerOptions);
+      });
+    }, this.observerOptions);
+  }
 
-// Observe elements for animation
-document.addEventListener('DOMContentLoaded', () => {
-    const animateElements = document.querySelectorAll('.skill-category, .timeline-item, .cert-card, .project-card');
-    animateElements.forEach(el => {
-        observer.observe(el);
-    });
-});
-
-// Navbar background on scroll
-window.addEventListener('scroll', () => {
-    const navbar = document.querySelector('.navbar');
-    if (window.scrollY > 50) {
-        navbar.style.backgroundColor = 'rgba(255, 255, 255, 0.98)';
-    } else {
-        navbar.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
-    }
-});
-
-// Typing effect for hero subtitle (optional enhancement)
-function typeWriter(element, text, speed = 100) {
-    let i = 0;
-    element.innerHTML = '';
+  observeElements() {
+    const animateElements = document.querySelectorAll(
+      '.skill-category, .timeline-item, .cert-card, .project-card, .highlight'
+    );
     
-    function type() {
-        if (i < text.length) {
-            element.innerHTML += text.charAt(i);
-            i++;
-            setTimeout(type, speed);
-        }
+    animateElements.forEach(el => {
+      this.observer.observe(el);
+    });
+  }
+}
+
+// Initialize animation observer
+const animationObserver = new AnimationObserver();
+
+// Navbar Background on Scroll
+class NavbarScrollEffect {
+  constructor() {
+    this.navbar = document.querySelector('.navbar');
+    this.init();
+  }
+
+  init() {
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    window.addEventListener('scroll', () => this.handleScroll());
+  }
+
+  handleScroll() {
+    if (window.scrollY > 50) {
+      this.navbar.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+      this.navbar.style.backdropFilter = 'blur(20px)';
+    } else {
+      this.navbar.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+      this.navbar.style.backdropFilter = 'blur(20px)';
     }
+
+    // Dark mode adjustments
+    if (document.documentElement.getAttribute('data-theme') === 'dark') {
+      if (window.scrollY > 50) {
+        this.navbar.style.backgroundColor = 'rgba(15, 23, 42, 0.95)';
+      } else {
+        this.navbar.style.backgroundColor = 'rgba(15, 23, 42, 0.8)';
+      }
+    }
+  }
+}
+
+// Initialize navbar scroll effect
+const navbarScrollEffect = new NavbarScrollEffect();
+
+// Typing Effect for Hero Subtitle
+class TypingEffect {
+  constructor() {
+    this.heroSubtitle = document.querySelector('.hero-subtitle');
+    this.init();
+  }
+
+  init() {
+    if (this.heroSubtitle) {
+      this.startTyping();
+    }
+  }
+
+  startTyping() {
+    const originalText = this.heroSubtitle.textContent;
+    this.heroSubtitle.textContent = '';
+    
+    setTimeout(() => {
+      this.typeWriter(this.heroSubtitle, originalText, 100);
+    }, 1000);
+  }
+
+  typeWriter(element, text, speed) {
+    let i = 0;
+    
+    const type = () => {
+      if (i < text.length) {
+        element.textContent += text.charAt(i);
+        i++;
+        setTimeout(type, speed);
+      }
+    };
     
     type();
+  }
 }
 
-// Initialize typing effect on page load
-document.addEventListener('DOMContentLoaded', () => {
-    const heroSubtitle = document.querySelector('.hero-subtitle');
-    const originalText = heroSubtitle.textContent;
-    
-    setTimeout(() => {
-        typeWriter(heroSubtitle, originalText, 150);
-    }, 1000);
-});
+// Initialize typing effect
+const typingEffect = new TypingEffect();
 
-// Skill bars animation (optional enhancement)
-function animateSkillBars() {
+// Skill Bars Animation
+class SkillBarsAnimation {
+  constructor() {
+    this.skillsSection = document.getElementById('skills');
+    this.init();
+  }
+
+  init() {
+    if (this.skillsSection) {
+      this.setupObserver();
+    }
+  }
+
+  setupObserver() {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          this.animateSkillBars();
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+
+    observer.observe(this.skillsSection);
+  }
+
+  animateSkillBars() {
     const skillCategories = document.querySelectorAll('.skill-category');
     
-    skillCategories.forEach(category => {
-        const skills = category.querySelectorAll('li');
-        skills.forEach((skill, index) => {
-            skill.style.opacity = '0';
-            skill.style.transform = 'translateX(-20px)';
-            skill.style.transition = 'all 0.3s ease';
-            
-            setTimeout(() => {
-                skill.style.opacity = '1';
-                skill.style.transform = 'translateX(0)';
-            }, index * 100);
-        });
+    skillCategories.forEach((category, categoryIndex) => {
+      const skills = category.querySelectorAll('li');
+      
+      skills.forEach((skill, skillIndex) => {
+        skill.style.opacity = '0';
+        skill.style.transform = 'translateX(-20px)';
+        skill.style.transition = 'all 0.3s ease';
+        
+        setTimeout(() => {
+          skill.style.opacity = '1';
+          skill.style.transform = 'translateX(0)';
+        }, (categoryIndex * 200) + (skillIndex * 100));
+      });
     });
+  }
 }
 
-// Trigger skill animation when skills section is visible
-const skillsSection = document.getElementById('skills');
-const skillsObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            animateSkillBars();
-            skillsObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0.3 });
+// Initialize skill bars animation
+const skillBarsAnimation = new SkillBarsAnimation();
 
-skillsObserver.observe(skillsSection);
+// Back to Top Button
+class BackToTopButton {
+  constructor() {
+    this.button = null;
+    this.init();
+  }
 
-// Back to top button functionality
-function createBackToTopButton() {
-    const button = document.createElement('button');
-    button.innerHTML = '<i class="fas fa-arrow-up"></i>';
-    button.className = 'back-to-top';
-    button.style.cssText = `
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background-color: #3498db;
-        color: white;
-        border: none;
-        cursor: pointer;
-        font-size: 1.2rem;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-        z-index: 1000;
-        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+  init() {
+    this.createButton();
+    this.setupEventListeners();
+  }
+
+  createButton() {
+    this.button = document.createElement('button');
+    this.button.innerHTML = '<i class="fas fa-arrow-up"></i>';
+    this.button.className = 'back-to-top';
+    this.button.setAttribute('aria-label', 'Back to top');
+    
+    this.button.style.cssText = `
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 1000;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     `;
     
-    button.addEventListener('click', () => {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
+    this.button.addEventListener('click', () => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
     });
     
-    document.body.appendChild(button);
-    
-    // Show/hide button based on scroll position
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 300) {
-            button.style.opacity = '1';
-            button.style.visibility = 'visible';
-        } else {
-            button.style.opacity = '0';
-            button.style.visibility = 'hidden';
-        }
-    });
+    document.body.appendChild(this.button);
+  }
+
+  setupEventListeners() {
+    window.addEventListener('scroll', () => this.handleScroll());
+  }
+
+  handleScroll() {
+    if (window.scrollY > 300) {
+      this.button.style.opacity = '1';
+      this.button.style.visibility = 'visible';
+    } else {
+      this.button.style.opacity = '0';
+      this.button.style.visibility = 'hidden';
+    }
+  }
 }
 
 // Initialize back to top button
-createBackToTopButton();
+const backToTopButton = new BackToTopButton();
 
-// Add CSS for active nav link
-const style = document.createElement('style');
-style.textContent = `
-    .nav-link.active {
-        color: #3498db !important;
-        font-weight: 600;
+// Parallax Effect for Hero Shapes
+class ParallaxEffect {
+  constructor() {
+    this.shapes = document.querySelectorAll('.shape');
+    this.init();
+  }
+
+  init() {
+    if (this.shapes.length > 0) {
+      this.setupEventListeners();
     }
-    
-    .back-to-top:hover {
-        background-color: #2980b9 !important;
-        transform: translateY(-2px);
-    }
+  }
+
+  setupEventListeners() {
+    window.addEventListener('scroll', () => this.handleScroll());
+  }
+
+  handleScroll() {
+    const scrolled = window.pageYOffset;
+    const rate = scrolled * -0.5;
+
+    this.shapes.forEach((shape, index) => {
+      const speed = (index + 1) * 0.1;
+      shape.style.transform = `translateY(${rate * speed}px) rotate(${scrolled * 0.1}deg)`;
+    });
+  }
+}
+
+// Initialize parallax effect
+const parallaxEffect = new ParallaxEffect();
+
+// Add CSS for active nav link and other dynamic styles
+const dynamicStyles = document.createElement('style');
+dynamicStyles.textContent = `
+  .nav-link.active {
+    color: var(--accent-primary) !important;
+    font-weight: 600;
+  }
+  
+  .back-to-top:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  }
+  
+  .notification-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .notification-content i {
+    font-size: 1.2rem;
+  }
+  
+  /* Loading animation for buttons */
+  .btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  /* Enhanced hover effects */
+  .project-card:hover .project-icon {
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
+  }
+  
+  .blog-card:hover .blog-category {
+    transform: scale(1.05);
+    transition: transform 0.3s ease;
+  }
+  
+  /* Smooth transitions for theme changes */
+  * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
 `;
-document.head.appendChild(style);
+
+document.head.appendChild(dynamicStyles);
+
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('Portfolio loaded successfully!');
+  
+  // Add a subtle entrance animation to the entire page
+  document.body.style.opacity = '0';
+  document.body.style.transform = 'translateY(20px)';
+  
+  setTimeout(() => {
+    document.body.style.transition = 'all 0.6s ease';
+    document.body.style.opacity = '1';
+    document.body.style.transform = 'translateY(0)';
+  }, 100);
+});

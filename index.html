@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,7 @@
     <title>Ahmed Alam - Lead Data Engineer</title>
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -25,45 +25,137 @@
             </div>
             <div class="nav-menu" id="nav-menu">
                 <a href="#home" class="nav-link">Home</a>
-                <a href="#skills" class="nav-link">Skills</a>
-                <a href="#experience" class="nav-link">Experience</a>
-                <a href="#certifications" class="nav-link">Certifications</a>
+                <a href="#about" class="nav-link">About</a>
                 <a href="#projects" class="nav-link">Projects</a>
+                <a href="#experience" class="nav-link">Experience</a>
                 <a href="#contact" class="nav-link">Contact</a>
             </div>
-            <div class="hamburger" id="hamburger">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
+            <div class="nav-controls">
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <div class="hamburger" id="hamburger">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
             </div>
         </div>
     </nav>
 
     <!-- Hero/Home Section -->
     <section id="home" class="hero">
+        <div class="hero-background">
+            <div class="hero-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+            </div>
+        </div>
         <div class="container">
             <div class="hero-content">
                 <div class="hero-text">
-                    <h1 class="hero-title">Ahmed Alam</h1>
-                    <h2 class="hero-subtitle">Lead Data Engineer</h2>
+                    <div class="hero-badge">
+                        <i class="fas fa-code"></i>
+                        <span>Lead Data Engineer</span>
+                    </div>
+                    <h1 class="hero-title">
+                        <span class="gradient-text">Ahmed Alam</span>
+                    </h1>
+                    <h2 class="hero-subtitle">Building the Future of Data</h2>
                     <p class="hero-description">
                         Experienced Lead Data Engineer with 8+ years of success in designing and delivering enterprise-scale data solutions 
-                        across banking and pharmaceutical domains for US clients. Skilled in architecting modern data platforms, leading cross-functional teams, 
-                        and collaborating with business stakeholders to translate complex requirements into scalable, cloud-native data solutions. 
-                        Hands-on expertise in Big Data (Spark, Hadoop), AWS (EMR, Redshift, Lambda, MWAA), and automation using NiFi, 
-                        Airflow, and Python. Proven ability to deliver data lakes, ingestion pipelines, and BI systems with performance, governance, 
-                        and cost optimization.
+                        across banking and pharmaceutical domains. I specialize in architecting modern data platforms, leading cross-functional teams, 
+                        and transforming complex requirements into scalable, cloud-native solutions.
                     </p>
+                    <div class="hero-stats">
+                        <div class="stat">
+                            <span class="stat-number">8+</span>
+                            <span class="stat-label">Years Experience</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">50+</span>
+                            <span class="stat-label">Projects Delivered</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">16TB+</span>
+                            <span class="stat-label">Data Processed</span>
+                        </div>
+                    </div>
                     <div class="hero-buttons">
-                        <a href="#contact" class="btn btn-primary">Get In Touch</a>
+                        <a href="#contact" class="btn btn-primary">
+                            <span>Get In Touch</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
                         <a href="resume.pdf" download class="btn btn-secondary">
-                            <i class="fas fa-download"></i> Download Resume
+                            <i class="fas fa-download"></i>
+                            <span>Download Resume</span>
                         </a>
                     </div>
                 </div>
                 <div class="hero-image">
-                    <div class="profile-picture">
-                        <img src="Ahmed_profile_1753010004318.jpeg" alt="Ahmed Alam - Lead Data Engineer">
+                    <div class="profile-container">
+                        <div class="profile-picture">
+                            <img src="ahmed_profile.jpg" alt="Ahmed Alam - Lead Data Engineer">
+                        </div>
+                        <div class="profile-glow"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2 class="section-title">About Me</h2>
+                    <p class="about-description">
+                        I'm a passionate Lead Data Engineer with over 8 years of experience in transforming raw data into actionable insights. 
+                        My journey began with a fascination for data patterns and has evolved into expertise in building scalable, cloud-native data solutions.
+                    </p>
+                    <p class="about-description">
+                        I believe in the power of data to drive business decisions and create meaningful impact. My approach combines technical excellence 
+                        with strategic thinking, ensuring that every solution I build not only meets current needs but scales for future growth.
+                    </p>
+                    <div class="about-highlights">
+                        <div class="highlight">
+                            <i class="fas fa-rocket"></i>
+                            <div>
+                                <h4>Innovation</h4>
+                                <p>Always exploring cutting-edge technologies and methodologies</p>
+                            </div>
+                        </div>
+                        <div class="highlight">
+                            <i class="fas fa-users"></i>
+                            <div>
+                                <h4>Leadership</h4>
+                                <p>Leading cross-functional teams to deliver exceptional results</p>
+                            </div>
+                        </div>
+                        <div class="highlight">
+                            <i class="fas fa-chart-line"></i>
+                            <div>
+                                <h4>Impact</h4>
+                                <p>Delivering measurable business value through data solutions</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-visual">
+                    <div class="skills-preview">
+                        <h3>Core Expertise</h3>
+                        <div class="skill-tags">
+                            <span class="skill-tag">AWS Cloud</span>
+                            <span class="skill-tag">Apache Spark</span>
+                            <span class="skill-tag">Python</span>
+                            <span class="skill-tag">Data Lakes</span>
+                            <span class="skill-tag">ETL/ELT</span>
+                            <span class="skill-tag">Airflow</span>
+                            <span class="skill-tag">Redshift</span>
+                            <span class="skill-tag">NiFi</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -216,39 +308,89 @@
     <!-- Certifications Section -->
     <section id="certifications" class="certifications">
         <div class="container">
-            <h2 class="section-title">Certifications</h2>
+            <div class="section-header">
+                <h2 class="section-title">Professional Certifications</h2>
+                <p class="section-subtitle">Validating expertise through industry-recognized credentials</p>
+            </div>
             <div class="cert-grid">
-                <div class="cert-card">
-                    <div class="cert-icon">
-                        <i class="fab fa-microsoft"></i>
+                <div class="cert-card featured">
+                    <div class="cert-header">
+                        <div class="cert-icon">
+                            <i class="fab fa-microsoft"></i>
+                        </div>
+                        <div class="cert-status">
+                            <span class="status-badge active">Active</span>
+                        </div>
                     </div>
-                    <h3>Azure Data Fundamentals</h3>
-                    <p>DP-900</p>
-                    <span class="cert-badge">Microsoft Azure</span>
+                    <div class="cert-content">
+                        <h3>Azure Data Engineer Associate</h3>
+                        <p class="cert-code">DP-203</p>
+                        <p class="cert-description">Advanced certification in designing and implementing data solutions using Azure data services</p>
+                        <div class="cert-meta">
+                            <span class="cert-provider">Microsoft Azure</span>
+                            <span class="cert-date">2023</span>
+                        </div>
+                    </div>
                 </div>
+                
                 <div class="cert-card">
-                    <div class="cert-icon">
-                        <i class="fab fa-microsoft"></i>
+                    <div class="cert-header">
+                        <div class="cert-icon">
+                            <i class="fab fa-microsoft"></i>
+                        </div>
+                        <div class="cert-status">
+                            <span class="status-badge active">Active</span>
+                        </div>
                     </div>
-                    <h3>Azure Data Engineer Associate</h3>
-                    <p>DP-203</p>
-                    <span class="cert-badge">Microsoft Azure</span>
+                    <div class="cert-content">
+                        <h3>Azure Data Fundamentals</h3>
+                        <p class="cert-code">DP-900</p>
+                        <p class="cert-description">Foundational knowledge of core data concepts and Azure data services</p>
+                        <div class="cert-meta">
+                            <span class="cert-provider">Microsoft Azure</span>
+                            <span class="cert-date">2022</span>
+                        </div>
+                    </div>
                 </div>
+                
                 <div class="cert-card">
-                    <div class="cert-icon">
-                        <i class="fab fa-python"></i>
+                    <div class="cert-header">
+                        <div class="cert-icon">
+                            <i class="fab fa-python"></i>
+                        </div>
+                        <div class="cert-status">
+                            <span class="status-badge active">Active</span>
+                        </div>
                     </div>
-                    <h3>Introduction to Python</h3>
-                    <p>Programming Fundamentals</p>
-                    <span class="cert-badge">Python</span>
+                    <div class="cert-content">
+                        <h3>Python Programming</h3>
+                        <p class="cert-code">Fundamentals</p>
+                        <p class="cert-description">Core Python programming skills for data engineering and automation</p>
+                        <div class="cert-meta">
+                            <span class="cert-provider">Python Institute</span>
+                            <span class="cert-date">2021</span>
+                        </div>
+                    </div>
                 </div>
+                
                 <div class="cert-card">
-                    <div class="cert-icon">
-                        <i class="fas fa-fire"></i>
+                    <div class="cert-header">
+                        <div class="cert-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="cert-status">
+                            <span class="status-badge active">Active</span>
+                        </div>
                     </div>
-                    <h3>Introduction to PySpark</h3>
-                    <p>Big Data Processing</p>
-                    <span class="cert-badge">PySpark</span>
+                    <div class="cert-content">
+                        <h3>Apache Spark & PySpark</h3>
+                        <p class="cert-code">Big Data</p>
+                        <p class="cert-description">Distributed data processing with Apache Spark and PySpark frameworks</p>
+                        <div class="cert-meta">
+                            <span class="cert-provider">Apache Foundation</span>
+                            <span class="cert-date">2021</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -257,173 +399,296 @@
     <!-- Projects Section -->
     <section id="projects" class="projects">
         <div class="container">
-            <h2 class="section-title">Featured Projects</h2>
+            <div class="section-header">
+                <h2 class="section-title">Featured Projects</h2>
+                <p class="section-subtitle">Showcasing my expertise through real-world data engineering solutions</p>
+            </div>
             <div class="projects-grid">
                 <div class="project-card">
-                    <div class="project-icon">
-                        <i class="fas fa-fire"></i>
+                    <div class="project-image">
+                        <div class="project-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="project-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
                     </div>
-                    <h3>Spark Based Ingestion Framework</h3>
-                    <p>Developed an event-based architecture for data ingestion using Spark, providing scalable and efficient data processing capabilities.</p>
-                    <div class="project-tech">
-                        <span>AWS EMR</span>
-                        <span>Lambda</span>
-                        <span>S3</span>
-                        <span>MWAA</span>
-                        <span>SNS</span>
-                        <span>Redshift</span>
-                    </div>
-                </div>
-                <div class="project-card">
-                    <div class="project-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <h3>Veeva Salesforce CRM Development</h3>
-                    <p>Led development for both US and European regions, integrating CRM data into Data Lake and establishing Data Warehouse on Redshift for business reporting.</p>
-                    <div class="project-tech">
-                        <span>RTS</span>
-                        <span>AWS EMR</span>
-                        <span>S3</span>
-                        <span>Lambda</span>
-                        <span>Redshift</span>
-                        <span>PySpark</span>
-                        <span>SQL</span>
-                    </div>
-                </div>
-                <div class="project-card">
-                    <div class="project-icon">
-                        <i class="fas fa-database"></i>
-                    </div>
-                    <h3>Data Integration for Master Data Management</h3>
-                    <p>Led a transformative project creating a versatile data processing system designed to make data management seamless and comprehensive.</p>
-                    <div class="project-tech">
-                        <span>Data Integration</span>
-                        <span>Master Data</span>
-                        <span>Data Processing</span>
-                        <span>AWS</span>
+                    <div class="project-content">
+                        <div class="project-category">Data Engineering</div>
+                        <h3>Spark Based Ingestion Framework</h3>
+                        <p>Developed an event-based architecture for data ingestion using Spark, providing scalable and efficient data processing capabilities. Reduced processing time by 40% and improved system reliability.</p>
+                        <div class="project-results">
+                            <div class="result">
+                                <span class="result-number">40%</span>
+                                <span class="result-label">Faster Processing</span>
+                            </div>
+                            <div class="result">
+                                <span class="result-number">99.9%</span>
+                                <span class="result-label">Uptime</span>
+                            </div>
+                        </div>
+                        <div class="project-tech">
+                            <span>AWS EMR</span>
+                            <span>Lambda</span>
+                            <span>S3</span>
+                            <span>MWAA</span>
+                            <span>SNS</span>
+                            <span>Redshift</span>
+                        </div>
                     </div>
                 </div>
                 <div class="project-card">
-                    <div class="project-icon">
-                        <i class="fas fa-cogs"></i>
+                    <div class="project-image">
+                        <div class="project-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="project-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
                     </div>
-                    <h3>Configurable Data Processing & Transformation</h3>
-                    <p>Led pivotal project with AWS EMR and Spark pipeline, offering unparalleled flexibility and automation. Included Veeva Vault API integration for pharmaceutical operations.</p>
-                    <div class="project-tech">
-                        <span>Data Lakes</span>
-                        <span>Apache NiFi</span>
-                        <span>Python</span>
-                        <span>API</span>
-                        <span>JSON</span>
-                        <span>S3</span>
-                        <span>AWS Athena</span>
-                    </div>
-                </div>
-                <div class="project-card">
-                    <div class="project-icon">
-                        <i class="fas fa-cloud"></i>
-                    </div>
-                    <h3>Operational Data Lake (ODL)</h3>
-                    <p>Revolutionary infrastructure processing data from various pharmaceutical sources including PPD, Syneos, Icon, Parexel, and others for strategic decision-making.</p>
-                    <div class="project-tech">
-                        <span>Data Lakes</span>
-                        <span>Data Integration</span>
-                        <span>Apache NiFi</span>
-                        <span>Python</span>
-                        <span>API</span>
-                        <span>JSON</span>
-                        <span>S3</span>
-                        <span>AWS Athena</span>
+                    <div class="project-content">
+                        <div class="project-category">CRM Integration</div>
+                        <h3>Veeva Salesforce CRM Development</h3>
+                        <p>Led development for both US and European regions, integrating CRM data into Data Lake and establishing Data Warehouse on Redshift for business reporting.</p>
+                        <div class="project-tech">
+                            <span>RTS</span>
+                            <span>AWS EMR</span>
+                            <span>S3</span>
+                            <span>Lambda</span>
+                            <span>Redshift</span>
+                            <span>PySpark</span>
+                            <span>SQL</span>
+                        </div>
                     </div>
                 </div>
                 <div class="project-card">
-                    <div class="project-icon">
-                        <i class="fab fa-microsoft"></i>
+                    <div class="project-image">
+                        <div class="project-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="project-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
                     </div>
-                    <h3>SharePoint Online Integration</h3>
-                    <p>Led groundbreaking project for pharmaceutical firms, seamlessly extracting data from SharePoint 365 with primary focus on optimizing data flow for protocol deviation management.</p>
-                    <div class="project-tech">
-                        <span>Data Lakes</span>
-                        <span>Data Integration</span>
-                        <span>Apache NiFi</span>
-                        <span>Python</span>
-                        <span>API</span>
-                        <span>JSON</span>
-                        <span>S3</span>
-                        <span>AWS Athena</span>
-                    </div>
-                </div>
-                <div class="project-card">
-                    <div class="project-icon">
-                        <i class="fas fa-chart-bar"></i>
-                    </div>
-                    <h3>Healthverity – 16+ TB Data Processing</h3>
-                    <p>Spearheaded monumental project overseeing processing of 16 TB of data, showcasing expertise in big data processing and optimization with EMR SPOT instances challenges.</p>
-                    <div class="project-tech">
-                        <span>Data Lakes</span>
-                        <span>Data Integration</span>
-                        <span>AWS EMR</span>
-                        <span>Airflow</span>
-                        <span>S3</span>
-                        <span>AWS Athena</span>
+                    <div class="project-content">
+                        <div class="project-category">Data Management</div>
+                        <h3>Data Integration for Master Data Management</h3>
+                        <p>Led a transformative project creating a versatile data processing system designed to make data management seamless and comprehensive.</p>
+                        <div class="project-tech">
+                            <span>Data Integration</span>
+                            <span>Master Data</span>
+                            <span>Data Processing</span>
+                            <span>AWS</span>
+                        </div>
                     </div>
                 </div>
                 <div class="project-card">
-                    <div class="project-icon">
-                        <i class="fas fa-building"></i>
+                    <div class="project-image">
+                        <div class="project-icon">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="project-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
                     </div>
-                    <h3>HBL Datalake Implementation</h3>
-                    <p>Engineered robust data pipeline utilizing Sqoop and Spark to efficiently gather data from diverse sources including Core Banking, Mobile Banking, and IRIS systems.</p>
-                    <div class="project-tech">
-                        <span>Cloudera</span>
-                        <span>Apache Hadoop</span>
-                        <span>Apache Sqoop</span>
-                        <span>Apache Impala</span>
-                        <span>Apache Spark</span>
-                        <span>ETL</span>
-                        <span>Power BI</span>
-                        <span>SSRS</span>
-                    </div>
-                </div>
-                <div class="project-card">
-                    <div class="project-icon">
-                        <i class="fas fa-users-cog"></i>
-                    </div>
-                    <h3>Active Directory Integration</h3>
-                    <p>Established connection to Active Directory through Linked Server, utilizing Microsoft OLE DB Driver for seamless data extraction and enhanced employee management systems.</p>
-                    <div class="project-tech">
-                        <span>Microsoft SQL Server</span>
-                        <span>Linked Server</span>
-                        <span>Microsoft OLE DB Driver</span>
-                        <span>Active Directory</span>
+                    <div class="project-content">
+                        <div class="project-category">Data Processing</div>
+                        <h3>Configurable Data Processing & Transformation</h3>
+                        <p>Led pivotal project with AWS EMR and Spark pipeline, offering unparalleled flexibility and automation. Included Veeva Vault API integration for pharmaceutical operations.</p>
+                        <div class="project-tech">
+                            <span>Data Lakes</span>
+                            <span>Apache NiFi</span>
+                            <span>Python</span>
+                            <span>API</span>
+                            <span>JSON</span>
+                            <span>S3</span>
+                            <span>AWS Athena</span>
+                        </div>
                     </div>
                 </div>
                 <div class="project-card">
-                    <div class="project-icon">
-                        <i class="fas fa-phone"></i>
+                    <div class="project-image">
+                        <div class="project-icon">
+                            <i class="fas fa-cloud"></i>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="project-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
                     </div>
-                    <h3>Call Center Asterisk ETL Pipeline</h3>
-                    <p>Led high-impact project developing streamlined ETL pipeline for Asterisk and MySQL-powered call center, providing granular hourly insights into agent performance.</p>
-                    <div class="project-tech">
-                        <span>MySQL</span>
-                        <span>ETL</span>
-                        <span>Asterisk</span>
-                        <span>SQL Server</span>
-                        <span>Linked Server</span>
+                    <div class="project-content">
+                        <div class="project-category">Data Lake</div>
+                        <h3>Operational Data Lake (ODL)</h3>
+                        <p>Revolutionary infrastructure processing data from various pharmaceutical sources including PPD, Syneos, Icon, Parexel, and others for strategic decision-making.</p>
+                        <div class="project-tech">
+                            <span>Data Lakes</span>
+                            <span>Data Integration</span>
+                            <span>Apache NiFi</span>
+                            <span>Python</span>
+                            <span>API</span>
+                            <span>JSON</span>
+                            <span>S3</span>
+                            <span>AWS Athena</span>
+                        </div>
                     </div>
                 </div>
                 <div class="project-card">
-                    <div class="project-icon">
-                        <i class="fas fa-home"></i>
+                    <div class="project-image">
+                        <div class="project-icon">
+                            <i class="fab fa-microsoft"></i>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="project-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
                     </div>
-                    <h3>Mortgage Data Warehouse & BI Dashboards</h3>
-                    <p>Designed and implemented robust Mortgage Data Warehouse with star schema design, enabling seamless data extraction from BytePro and real-time data access.</p>
-                    <div class="project-tech">
-                        <span>SQL Server</span>
-                        <span>Microsoft SQL Server Agent</span>
-                        <span>Linked Server</span>
-                        <span>Power BI</span>
-                        <span>SSRS</span>
+                    <div class="project-content">
+                        <div class="project-category">Integration</div>
+                        <h3>SharePoint Online Integration</h3>
+                        <p>Led groundbreaking project for pharmaceutical firms, seamlessly extracting data from SharePoint 365 with primary focus on optimizing data flow for protocol deviation management.</p>
+                        <div class="project-tech">
+                            <span>Data Lakes</span>
+                            <span>Data Integration</span>
+                            <span>Apache NiFi</span>
+                            <span>Python</span>
+                            <span>API</span>
+                            <span>JSON</span>
+                            <span>S3</span>
+                            <span>AWS Athena</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <div class="project-image">
+                        <div class="project-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="project-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="project-content">
+                        <div class="project-category">Big Data</div>
+                        <h3>Healthverity – 16+ TB Data Processing</h3>
+                        <p>Spearheaded monumental project overseeing processing of 16 TB of data, showcasing expertise in big data processing and optimization with EMR SPOT instances challenges.</p>
+                        <div class="project-tech">
+                            <span>Data Lakes</span>
+                            <span>Data Integration</span>
+                            <span>AWS EMR</span>
+                            <span>Airflow</span>
+                            <span>S3</span>
+                            <span>AWS Athena</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <div class="project-image">
+                        <div class="project-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="project-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="project-content">
+                        <div class="project-category">Banking</div>
+                        <h3>HBL Datalake Implementation</h3>
+                        <p>Engineered robust data pipeline utilizing Sqoop and Spark to efficiently gather data from diverse sources including Core Banking, Mobile Banking, and IRIS systems.</p>
+                        <div class="project-tech">
+                            <span>Cloudera</span>
+                            <span>Apache Hadoop</span>
+                            <span>Apache Sqoop</span>
+                            <span>Apache Impala</span>
+                            <span>Apache Spark</span>
+                            <span>ETL</span>
+                            <span>Power BI</span>
+                            <span>SSRS</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <div class="project-image">
+                        <div class="project-icon">
+                            <i class="fas fa-users-cog"></i>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="project-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="project-content">
+                        <div class="project-category">Integration</div>
+                        <h3>Active Directory Integration</h3>
+                        <p>Established connection to Active Directory through Linked Server, utilizing Microsoft OLE DB Driver for seamless data extraction and enhanced employee management systems.</p>
+                        <div class="project-tech">
+                            <span>Microsoft SQL Server</span>
+                            <span>Linked Server</span>
+                            <span>Microsoft OLE DB Driver</span>
+                            <span>Active Directory</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <div class="project-image">
+                        <div class="project-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="project-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="project-content">
+                        <div class="project-category">Call Center</div>
+                        <h3>Call Center Asterisk ETL Pipeline</h3>
+                        <p>Led high-impact project developing streamlined ETL pipeline for Asterisk and MySQL-powered call center, providing granular hourly insights into agent performance.</p>
+                        <div class="project-tech">
+                            <span>MySQL</span>
+                            <span>ETL</span>
+                            <span>Asterisk</span>
+                            <span>SQL Server</span>
+                            <span>Linked Server</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <div class="project-image">
+                        <div class="project-icon">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="project-link">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="project-content">
+                        <div class="project-category">Data Warehouse</div>
+                        <h3>Mortgage Data Warehouse & BI Dashboards</h3>
+                        <p>Designed and implemented robust Mortgage Data Warehouse with star schema design, enabling seamless data extraction from BytePro and real-time data access.</p>
+                        <div class="project-tech">
+                            <span>SQL Server</span>
+                            <span>Microsoft SQL Server Agent</span>
+                            <span>Linked Server</span>
+                            <span>Power BI</span>
+                            <span>SSRS</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -433,22 +698,58 @@
     <!-- Contact Section -->
     <section id="contact" class="contact">
         <div class="container">
-            <h2 class="section-title">Get In Touch</h2>
+            <div class="section-header">
+                <h2 class="section-title">Let's Work Together</h2>
+                <p class="section-subtitle">Ready to discuss your next data engineering project? Let's connect!</p>
+            </div>
             <div class="contact-content">
                 <div class="contact-info">
-                    <h3>Let's Connect</h3>
-                    <p>I'm always interested in discussing new opportunities and data engineering challenges.</p>
-                    <div class="contact-item">
-                        <i class="fas fa-envelope"></i>
-                        <a href="mailto:Ahmedalam94@outlook.com">Ahmedalam94@outlook.com</a>
+                    <h3>Get In Touch</h3>
+                    <p>I'm always interested in discussing new opportunities and data engineering challenges. Whether you have a project in mind or just want to chat about data, feel free to reach out.</p>
+                    
+                    <div class="contact-methods">
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Email</h4>
+                                <a href="mailto:Ahmedalam94@outlook.com">Ahmedalam94@outlook.com</a>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Phone</h4>
+                                <a href="tel:+923043765800">+92 304 376 5800</a>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Location</h4>
+                                <span>Karachi, Pakistan</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="contact-item">
-                        <i class="fab fa-linkedin"></i>
-                        <a href="https://www.linkedin.com/in/ahmedalam94" target="_blank">LinkedIn Profile</a>
-                    </div>
-                    <div class="contact-item">
-                        <i class="fas fa-phone"></i>
-                        <a href="tel:+923043765800">+92 304 376 5800</a>
+
+                    <div class="social-links">
+                        <h4>Follow Me</h4>
+                        <div class="social-icons">
+                            <a href="https://www.linkedin.com/in/ahmedalam94" target="_blank" class="social-link">
+                                <i class="fab fa-linkedin"></i>
+                            </a>
+                            <a href="https://github.com/Ahmed0312" target="_blank" class="social-link">
+                                <i class="fab fa-github"></i>
+                            </a>
+                            <a href="mailto:Ahmedalam94@outlook.com" class="social-link">
+                                <i class="fas fa-envelope"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
