@@ -1,0 +1,907 @@
+resources:
+  jobs:
+    # --- EDX ---
+    connector_volumes_cleanup:
+      name: edx volume cleanup job
+      description: >-
+        Auto-discovery connector-based TTL cleanup for volumes in the land layer.
+
+        This job automatically:
+        1. Scans all catalogs matching patterns (*_dev, *_prod)
+        2. Discovers volumes in each catalog's land layer matching connector name patterns
+        3. Creates/updates a configuration table with discovered volumes
+        4. Performs cleanup on all discovered volumes based on retention policies
+
+        Supported connectors: victron, solaredge, growatt, joulz (extensible to odos, etc.)
+
+        No manual configuration needed - fully automatic discovery and cleanup!
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      trigger:
+        pause_status: UNPAUSED
+        periodic:
+          interval: 1
+          unit: DAYS
+      tasks:
+        - task_key: auto_discovery_cleanup
+          notebook_task:
+            notebook_path: ../src/edx/connector_volumes_cleanup.py
+            base_parameters:
+              connector_names: victron,solaredge,growatt,joulz
+              retention_days: "15"
+              catalogs_to_scan: "_dev,_prod"
+            source: WORKSPACE
+      tags:
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: batch
+      queue:
+        enabled: true
+      performance_target: PERFORMANCE_OPTIMIZED
+
+    Anomaly_Predictor:
+      name: Anomaly Predictor
+      trigger:
+        pause_status: UNPAUSED
+        periodic:
+          interval: 1
+          unit: DAYS
+      tasks:
+        - task_key: Run_predictor_anomaly
+          notebook_task:
+            notebook_path: ../src/notebooks/AnomalyDetection_Predictor.ipynb
+            source: WORKSPACE
+          environment_key: Run_predictor_anomaly_environment
+      queue:
+        enabled: true
+      environments:
+        - environment_key: Run_predictor_anomaly_environment
+          spec:
+            environment_version: "4"
+      performance_target: PERFORMANCE_OPTIMIZED
+
+    # --- BAM ---
+    bam_odos_batch_job:
+      name: bam odos batch job
+      description: >-
+        Batch pipeline for Bam:
+
+        1. b01_api_ingestion: Extract CSV and ASC source data from the API.
+
+        2. b02_land2bronze: Transforms the CSV data in tabular parquet format and becomes the source of truth.
+
+        3. b03_bronze2silver: Unpivots the CSV data into long format with a single timestamp.
+
+        4. b04_silver2gold: Assert business logic to the table.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      timeout_seconds: 10800
+      health:
+        rules:
+          - metric: RUN_DURATION_SECONDS
+            op: GREATER_THAN
+            value: 7200
+      schedule:
+        quartz_cron_expression: 9 0 12 * * ?
+        timezone_id: UTC
+        pause_status: PAUSED
+      max_concurrent_runs: 4
+      tasks:
+        - task_key: b01_api_ingestion
+          notebook_task:
+            notebook_path: ../src/clients/bam/batch/odos/b01_odos_source2land.py
+            source: WORKSPACE
+          job_cluster_key: memory_intensive_cluster
+          max_retries: 3
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+        - task_key: b02_land2bronze
+          depends_on:
+            - task_key: b01_api_ingestion
+          notebook_task:
+            notebook_path: ../src/clients/bam/batch/odos/b02_odos_land2bronze.py
+            source: WORKSPACE
+          job_cluster_key: memory_intensive_cluster
+        - task_key: b03_bronze2silver
+          depends_on:
+            - task_key: b02_land2bronze
+          notebook_task:
+            notebook_path: ../src/clients/bam/batch/odos/b03_odos_bronze2silver.py
+            source: WORKSPACE
+          job_cluster_key: memory_intensive_cluster
+        - task_key: b04_silver2gold
+          depends_on:
+            - task_key: b03_bronze2silver
+          dbt_task:
+            project_directory: ../dbt
+            commands:
+              - dbt deps --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt seed --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt run --select odos_batch --vars '{"bam_catalog":"${var.bam_catalog}"}' --profile ${var.dbt_profile} --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files
+            catalog: ${var.bam_catalog}
+            schema: gold
+            warehouse_id: ${var.sql_warehouse_id}
+            source: WORKSPACE
+          environment_key: dbt-default
+      job_clusters:
+        - job_cluster_key: memory_intensive_cluster
+          new_cluster:
+            spark_version: 17.1.x-scala2.13
+            aws_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK
+              zone_id: auto
+              spot_bid_price_percent: 100
+              ebs_volume_type: GENERAL_PURPOSE_SSD
+              ebs_volume_count: 3
+              ebs_volume_size: 100
+            node_type_id: r8g.xlarge
+            driver_node_type_id: r8g.xlarge
+            enable_elastic_disk: false
+            data_security_mode: SINGLE_USER
+            runtime_engine: STANDARD
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+      tags:
+        client: bam
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: batch
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.bam_catalog}
+        - name: volume_name
+          default: odos_batch
+        - name: checkpoint_table_name
+          default: processing_checkpoint_batch
+        - name: silver_table_name
+          default: odos_batch
+        - name: report_table_name
+          default: imei_signal_mappings_batch
+      environments:
+        - environment_key: dbt-default
+          spec:
+            environment_version: 2
+            dependencies:
+              - dbt-databricks>=1.0.0,<2.0.0
+      performance_target: PERFORMANCE_OPTIMIZED
+        
+    bam_odos_stream_job:
+      name: bam odos stream job
+      description: >-
+        Streaming pipeline for Bam:
+
+        1. b01_ddl_statements: Creates the Delta tables first so the job will not return an error in case a downstream task starts first.
+
+        2. s02_ingest2bronze: Reads from Kinesis source into a bronze table.
+
+        3. s03_imei_registry: Reads the bronze table to identify new device IMEIs along with its unique signals for each parameter.
+
+        4. s04_process2silver: Enriches the bronze data by joining it with the imei_registry_stream table to get the correct signal mappings for each device.
+
+        5. s05_write2kinesis_bronze: Reads the continuous stream of new records from the bronze Delta table.
+
+        6. s06_write2kinesis_silver: Reads the continuous stream of new records from the silver Delta table.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      continuous:
+        pause_status: PAUSED
+      tasks:
+        - task_key: b01_ddl_statements
+          notebook_task:
+            notebook_path: ../src/clients/bam/stream/b01_ddl_statements.py
+            source: WORKSPACE
+        - task_key: s02_ingest2bronze
+          notebook_task:
+            notebook_path: ../src/clients/bam/stream/s02_kinesis2bronze.py
+            source: WORKSPACE
+          job_cluster_key: process_to_bronze_cluster
+        - task_key: s03_imei_registry
+          notebook_task:
+            notebook_path: ../src/clients/bam/stream/s03_imei_registry_stream.py
+            source: WORKSPACE
+          job_cluster_key: imei_registry_cluster
+        - task_key: s04_process2silver
+          notebook_task:
+            notebook_path: ../src/clients/bam/stream/s04_bronze2silver.py
+            source: WORKSPACE
+          job_cluster_key: process_to_silver_cluster
+        - task_key: s05_write2kinesis_bronze
+          notebook_task:
+            notebook_path: ../src/clients/bam/stream/s05_bronze2kinesis.py
+            source: WORKSPACE
+          job_cluster_key: write_to_kinesis_bronze_cluster
+        - task_key: s06_write2kinesis_silver
+          notebook_task:
+            notebook_path: ../src/clients/bam/stream/s06_silver2kinesis.py
+            source: WORKSPACE
+          job_cluster_key: write_to_kinesis_silver_cluster
+      job_clusters:
+        - job_cluster_key: imei_registry_cluster
+          new_cluster:
+            spark_version: 17.1.x-scala2.13
+            aws_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK
+              zone_id: auto
+              instance_profile_arn: arn:aws:iam::867344430965:instance-profile/edx-databricks-data-access-profile
+              spot_bid_price_percent: 100
+              ebs_volume_type: GENERAL_PURPOSE_SSD
+              ebs_volume_count: 3
+              ebs_volume_size: 100
+            node_type_id: r8g.large
+            spark_env_vars:
+              PYSPARK_PYTHON: /databricks/python3/bin/python3
+            enable_elastic_disk: false
+            data_security_mode: SINGLE_USER
+            runtime_engine: PHOTON
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+        - job_cluster_key: process_to_silver_cluster
+          new_cluster:
+            spark_version: 17.1.x-scala2.13
+            aws_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK
+              zone_id: auto
+              instance_profile_arn: arn:aws:iam::867344430965:instance-profile/edx-databricks-data-access-profile
+              spot_bid_price_percent: 100
+            node_type_id: m7gd.xlarge
+            enable_elastic_disk: false
+            data_security_mode: SINGLE_USER
+            runtime_engine: PHOTON
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+        - job_cluster_key: process_to_bronze_cluster
+          new_cluster:
+            spark_version: 17.1.x-scala2.13
+            aws_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK
+              zone_id: auto
+              instance_profile_arn: arn:aws:iam::867344430965:instance-profile/edx-databricks-data-access-profile
+              spot_bid_price_percent: 100
+              ebs_volume_type: GENERAL_PURPOSE_SSD
+              ebs_volume_count: 3
+              ebs_volume_size: 100
+            node_type_id: m8g.large
+            driver_node_type_id: m8g.xlarge
+            enable_elastic_disk: false
+            data_security_mode: SINGLE_USER
+            runtime_engine: PHOTON
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+        - job_cluster_key: write_to_kinesis_silver_cluster
+          new_cluster:
+            spark_version: 17.1.x-scala2.13
+            aws_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK
+              zone_id: auto 
+              instance_profile_arn: arn:aws:iam::867344430965:instance-profile/edx-databricks-data-access-profile
+              spot_bid_price_percent: 100
+              ebs_volume_type: GENERAL_PURPOSE_SSD
+              ebs_volume_count: 3
+              ebs_volume_size: 100
+            node_type_id: m8g.large
+            driver_node_type_id: m8g.xlarge
+            spark_env_vars:
+              PYSPARK_PYTHON: /databricks/python3/bin/python3
+            enable_elastic_disk: false
+            data_security_mode: SINGLE_USER
+            runtime_engine: PHOTON
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+        - job_cluster_key: write_to_kinesis_bronze_cluster
+          new_cluster:
+            spark_version: 17.1.x-scala2.13
+            aws_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK
+              zone_id: auto
+              instance_profile_arn: arn:aws:iam::867344430965:instance-profile/edx-databricks-data-access-profile
+              spot_bid_price_percent: 100
+              ebs_volume_type: GENERAL_PURPOSE_SSD
+              ebs_volume_count: 3
+              ebs_volume_size: 100
+            node_type_id: m8g.large
+            driver_node_type_id: m8g.xlarge
+            spark_env_vars:
+              PYSPARK_PYTHON: /databricks/python3/bin/python3
+            enable_elastic_disk: false
+            data_security_mode: SINGLE_USER
+            runtime_engine: PHOTON
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+      tags:
+        client: bam
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: stream
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.bam_catalog}
+        - name: bronze_table_name
+          default: odos_stream
+        - name: silver_table_name
+          default: odos_stream
+        - name: imei_registry_table_name
+          default: imei_signal_mappings_streaming
+        - name: imei_state_table_name
+          default: imei_signal_mappings_state_streaming
+
+    bam_joulz_batch_job:
+      name: bam joulz batch job
+      description: >-
+        Batch pipeline for Joulz energy data:
+
+        1. b01_api2land: Fetches daily aggregate data from Joulz e-dataportal API for all configured EANs and writes JSON files to land volume.
+
+        2. b02_land2bronze: Processes JSON files using Auto Loader, unpivots measurements array, and writes to bronze table.
+
+        3. b03_bronze2silver: Transforms bronze data to Haystack-aligned silver layer with ontology-compliant point types and marker tags.
+
+        4. b04_silver2gold: Applies business logic via dbt and creates gold fact table (f_joulz_dap_batch).
+
+        5. b06_update_connection_metadata: Appends connection status record for Joulz devices (connector: joulz_api) to metadata.connection_status for historical tracking.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      schedule:
+        quartz_cron_expression: 15 0 2 * * ?
+        timezone_id: UTC
+        pause_status: UNPAUSED
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/clients/bam/batch/joulz/b01_joulz_api2land.py
+            source: WORKSPACE
+          job_cluster_key: joulz_batch_cluster
+          max_retries: 3
+          min_retry_interval_millis: 300000
+          retry_on_timeout: true
+          timeout_seconds: 1800
+        - task_key: b02_land2bronze
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/clients/bam/batch/joulz/b02_joulz_land2bronze.py
+            source: WORKSPACE
+          job_cluster_key: joulz_batch_cluster
+          timeout_seconds: 1800
+        - task_key: b03_bronze2silver
+          depends_on:
+            - task_key: b02_land2bronze
+          notebook_task:
+            notebook_path: ../src/clients/bam/batch/joulz/b03_joulz_bronze2silver.py
+            source: WORKSPACE
+          job_cluster_key: joulz_batch_cluster
+          timeout_seconds: 1800
+        - task_key: b04_silver2gold
+          depends_on:
+            - task_key: b03_bronze2silver
+          dbt_task:
+            project_directory: ../dbt
+            commands:
+              - dbt deps --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt seed --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt run --select f_joulz_dap_batch --vars '{"bam_catalog":"${var.bam_catalog}"}' --profile ${var.dbt_profile} --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files
+            catalog: ${var.bam_catalog}
+            schema: gold
+            warehouse_id: ${var.sql_warehouse_id}
+            source: WORKSPACE
+          environment_key: dbt-default
+        - task_key: b06_update_connection_metadata
+          depends_on:
+            - task_key: b04_silver2gold
+          notebook_task:
+            notebook_path: ../src/clients/b06_update_connection_metadata.py
+            base_parameters:
+              connector: joulz_api
+            source: WORKSPACE
+      job_clusters:
+        - job_cluster_key: joulz_batch_cluster
+          new_cluster:
+            spark_version: 17.1.x-scala2.13
+            aws_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK
+              zone_id: auto
+              spot_bid_price_percent: 100
+              ebs_volume_type: GENERAL_PURPOSE_SSD
+              ebs_volume_count: 3
+              ebs_volume_size: 100
+            node_type_id: m8g.large
+            driver_node_type_id: m8g.large
+            enable_elastic_disk: false
+            data_security_mode: SINGLE_USER
+            runtime_engine: STANDARD
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+      tags:
+        client: bam
+        brand: joulz
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: batch
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.bam_catalog}
+        - name: volume_name
+          default: joulz_dap_batch
+        - name: bronze_table_name
+          default: joulz_dap_batch
+        - name: silver_table_name
+          default: joulz_dap_batch
+        - name: time_range_minutes
+          default: "1440"
+        - name: days_back
+          default: "1"
+      environments:
+        - environment_key: dbt-default
+          spec:
+            environment_version: 2
+            dependencies:
+              - dbt-databricks>=1.0.0,<2.0.0
+      performance_target: PERFORMANCE_OPTIMIZED
+
+    # --- TGV ---
+    tgv_kafka_inverters_stream_job:
+      name: tgv kafka inverters stream job
+      description: >-
+        Streaming pipeline for Kafka inverters topic:
+
+        1. b01_ddl_statements: Creates the Delta tables first so the job will not return an error in case a downstream task starts first.
+
+        1. s02_ingest_to_land: Extracts JSON data from the Kafka tud_gv_Inverters topic and writes it into the land layer.
+
+        2. s03_process_to_bronze: Transforms the JSON data in tabular parquet format and becomes the source of truth.
+
+        3. s04_process_to_silver: Curates the data by extracting the right values from the "measurements" field.
+
+        4. s05_source_data_monitoring: Monitors the pipeline and sends an email alert if no new data arrives within a 15-minute period.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      continuous:
+        pause_status: PAUSED
+      tasks:
+        - task_key: b01_ddl_statements
+          notebook_task:
+            notebook_path: ../src/clients/tgv/stream/kafka_inverters/b01_ddl_statements.py
+            source: WORKSPACE
+        - task_key: s02_ingest_to_land
+          notebook_task:
+            notebook_path: ../src/clients/tgv/stream/kafka_inverters/s02_kafka2land.py
+            source: WORKSPACE
+          job_cluster_key: tgv_kafka_python_311
+        - task_key: s03_process_to_bronze
+          notebook_task:
+            notebook_path: ../src/clients/tgv/stream/kafka_inverters/s03_land2bronze.py
+            source: WORKSPACE
+          job_cluster_key: tgv_kafka_python_311
+        - task_key: s04_process_to_silver
+          notebook_task:
+            notebook_path: ../src/clients/tgv/stream/kafka_inverters/s04_bronze2silver.py
+            source: WORKSPACE
+          job_cluster_key: tgv_kafka_python_311
+        - task_key: s05_source_data_monitoring
+          notebook_task:
+            notebook_path: ../src/clients/tgv/stream/kafka_inverters/s05_source_data_monitoring.py
+            source: WORKSPACE
+          job_cluster_key: tgv_kafka_python_311
+      job_clusters:
+        - job_cluster_key: tgv_kafka_python_311
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            aws_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK
+              zone_id: eu-central-1a
+              spot_bid_price_percent: 100
+              ebs_volume_type: GENERAL_PURPOSE_SSD
+              ebs_volume_count: 3
+              ebs_volume_size: 100
+            node_type_id: m8g.xlarge
+            spark_env_vars:
+              PYSPARK_PYTHON: /databricks/python3/bin/python3
+            enable_elastic_disk: false
+            data_security_mode: SINGLE_USER
+            runtime_engine: STANDARD
+            autoscale:
+              min_workers: 1
+              max_workers: 6
+      tags:
+        client: tgv
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: stream
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.tgv_catalog}
+        - name: volume_name
+          default: kafka_inverters_stream
+        - name: bronze_table_name
+          default: kafka_inverters_stream
+        - name: silver_table_name
+          default: kafka_inverters_stream
+      performance_target: PERFORMANCE_OPTIMIZED
+
+    tgv_growatt_batch_job:
+      name: tgv growatt batch job
+      description: >-
+        Batch pipeline for Growatt inverter (Plant 10318726, SN mjp0e6b0t5):
+
+        1. b01_api2land: Extracts energy data from Growatt API and writes JSON files to land volume with filename pattern growatt_{plant_id}{device_sn}{timestamp}.json.
+
+        2. b02_land2bronze: Processes JSON files, extracts plant_id and device_sn from filename, and creates device-specific bronze table (growatt_mjp0e6b0t5_batch). No hardcoded mapping needed.
+
+        3. b03_bronze2silver: Transforms and enriches inverter telemetry data for silver layer.
+
+        4. b04_silver2gold: Applies business logic via dbt and creates gold fact table (f_growatt_inverter_mjp0e6b0t5_batch).
+
+        5. b05_growatt_devices: Writes device(s) source data in original format to land and writes transformed data in a dimension table in the gold layer.
+
+        6. b06_update_connection_metadata: Appends connection status record for Growatt devices (connector: growatt_api) to metadata.connection_status for historical tracking.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      schedule:
+        quartz_cron_expression: 15 0 2 * * ?
+        timezone_id: UTC
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/growatt/b01_growatt_api2land.py
+            source: WORKSPACE
+          max_retries: 5
+          min_retry_interval_millis: 300000
+          retry_on_timeout: true
+          timeout_seconds: 3600
+        - task_key: b02_land2bronze
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/growatt/b02_growatt_land2bronze.py
+            source: WORKSPACE
+        - task_key: b05_growatt_devices
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/growatt/b05_growatt_devices.py
+            source: WORKSPACE
+          max_retries: 5
+          min_retry_interval_millis: 300000
+          retry_on_timeout: true
+          timeout_seconds: 3600
+        - task_key: b03_bronze2silver
+          depends_on:
+            - task_key: b02_land2bronze
+            - task_key: b05_growatt_devices
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/growatt/b03_growatt_bronze2silver.py
+            source: WORKSPACE
+        - task_key: b04_silver2gold
+          depends_on:
+            - task_key: b03_bronze2silver
+          dbt_task:
+            project_directory: ../dbt
+            commands:
+              - dbt deps --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt seed --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt run --select tag:growatt_batch --vars '{"tgv_catalog":"${var.tgv_catalog}"}' --profile ${var.dbt_profile} --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files
+            catalog: ${var.tgv_catalog}
+            schema: gold
+            warehouse_id: ${var.sql_warehouse_id}
+            source: WORKSPACE
+          environment_key: dbt-default
+        - task_key: b06_update_connection_metadata
+          depends_on:
+            - task_key: b04_silver2gold
+          notebook_task:
+            notebook_path: ../src/clients/b06_update_connection_metadata.py
+            base_parameters:
+              connector: growatt_api
+            source: WORKSPACE
+      tags:
+        client: tgv
+        brand: growatt
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: batch
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.tgv_catalog}
+        - name: volume_name
+          default: growatt_inverters_batch
+        - name: bronze_table_name
+          default: growatt_mjp0e6b0t5_batch
+        - name: silver_table_name
+          default: growatt_mjp0e6b0t5_batch
+      environments:
+        - environment_key: dbt-default
+          spec:
+            environment_version: 2
+            dependencies:
+              - dbt-databricks>=1.0.0,<2.0.0
+      performance_target: PERFORMANCE_OPTIMIZED
+
+    tgv_solaredge_batch_job:
+      name: tgv solaredge batch job
+      description: >-
+        Batch pipeline for SolarEdge inverter (Site 58604, SN 7f181dc8-7c):
+
+        1. b01_api2land: Extracts inverter technical data from SolarEdge API and writes JSON files to land volume with filename pattern solaredge_inverter_{site_id}{serial_number}{timestamp}.json.
+
+        2. b02_land2bronze: Processes JSON files and creates device-specific bronze table (solaredge_7f181dc8_7c_batch) containing all inverter telemetry including totalActivePower and cumulative totalEnergy.
+
+        3. b03_bronze2silver: Enriches inverter data with metadata and creates silver table at 5-minute resolution.
+
+        4. b04_silver2gold: Calculates interval energy using LAG window functions on totalEnergy via dbt, aggregates to 15-minute intervals, and creates gold table (fact_solaredge_7f181dc8_7c_batch).
+
+        5. b05_solaredge_devices: Writes device(s) source data in original format to land and writes transformed data in a dimension table in the gold layer.
+
+        6. b06_update_connection_metadata: Appends connection status record for Solaredge devices (connector: solaredge_api) to metadata.connection_status for historical tracking.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      schedule:
+        quartz_cron_expression: 15 0 2 * * ?
+        timezone_id: UTC
+        pause_status: PAUSED
+      tasks:
+        - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/solaredge/b01_solaredge_api2land.py
+            source: WORKSPACE
+          max_retries: 3
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+        - task_key: b02_land2bronze
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/solaredge/b02_solaredge_land2bronze.py
+            source: WORKSPACE
+        - task_key: b05_solaredge_devices
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/solaredge/b05_solaredge_devices.py
+            source: WORKSPACE
+        - task_key: b03_bronze2silver
+          depends_on:
+            - task_key: b02_land2bronze
+            - task_key: b05_solaredge_devices
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/solaredge/b03_solaredge_bronze2silver.py
+            source: WORKSPACE
+        - task_key: b04_silver2gold
+          depends_on:
+            - task_key: b03_bronze2silver
+          dbt_task:
+            project_directory: ../dbt
+            commands:
+              - dbt deps --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt seed --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt run --select tag:solaredge_batch --vars '{"tgv_catalog":"${var.tgv_catalog}"}' --profile ${var.dbt_profile} --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files
+            catalog: ${var.tgv_catalog}
+            schema: gold
+            warehouse_id: ${var.sql_warehouse_id}
+            source: WORKSPACE
+          environment_key: dbt-default
+        - task_key: b06_update_connection_metadata
+          depends_on:
+            - task_key: b04_silver2gold
+          notebook_task:
+            notebook_path: ../src/clients/b06_update_connection_metadata.py
+            base_parameters:
+              connector: solaredge_api
+            source: WORKSPACE
+      tags:
+        client: tgv
+        brand: solaredge
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: batch
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.tgv_catalog}
+        - name: volume_name
+          default: solaredge_inverters_batch
+        - name: bronze_table_name
+          default: solaredge_7f181dc8_7c_batch
+        - name: silver_table_name
+          default: solaredge_7f181dc8_7c_batch
+      environments:
+        - environment_key: dbt-default
+          spec:
+            environment_version: 2
+            dependencies:
+              - dbt-databricks>=1.0.0,<2.0.0
+      performance_target: PERFORMANCE_OPTIMIZED
+
+    tgv_victron_batch_job:
+      name: tgv victron batch job
+      description: >-
+        Batch pipeline for Victron inverters (Sites 37151 & 407966):
+
+        1. b01_api2land: Fetches system-overview to get VE.Bus System productCode, then extracts CSV data from Victron API and writes to land volume with filename pattern victron_{site_id}{product_code}{timestamp}.csv.
+
+        2. b02_land2bronze: Processes CSV files, extracts product_code from filename, unpivots signals, and creates device-specific bronze tables (victron_2623_batch, victron_2611_batch).
+
+        3. b03_bronze2silver: Pivots bronze data back to wide format, reads latest device metadata JSON from land volume (instead of querying gold layer), enriches with model/series/sku fields for silver tables.
+
+        4. b04_silver2gold: Applies business logic via dbt, calculates power/energy metrics, and aggregates to 15-minute intervals in gold layer (f_victron_inverter_2623_batch, f_victron_inverter_2611_batch, f_victron_battery_2623_batch, f_victron_battery_2611_batch).
+
+        5. b05_victron_devices: Writes device(s) source data in original format to land and writes transformed data in a dimension table in the gold layer.
+
+        6. b06_update_connection_metadata: Appends connection status records for all 4 Victron devices (connector: victron_api) to metadata.connection_status for historical tracking.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      schedule:
+        quartz_cron_expression: 15 0 2 * * ?
+        timezone_id: UTC
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/victron/b01_victron_api2land.py
+            source: WORKSPACE
+          max_retries: 3
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+        - task_key: b05_victron_devices
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/victron/b05_victron_devices.py
+            source: WORKSPACE
+          max_retries: 3
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+        - task_key: b02_land2bronze
+          depends_on:
+            - task_key: b01_api2land
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/victron/b02_victron_land2bronze.py
+            source: WORKSPACE
+        - task_key: b03_bronze2silver
+          depends_on:
+            - task_key: b02_land2bronze
+            - task_key: b05_victron_devices
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/victron/b03_victron_bronze2silver.py
+            source: WORKSPACE
+        - task_key: b04_silver2gold
+          depends_on:
+            - task_key: b03_bronze2silver
+          dbt_task:
+            project_directory: ../dbt
+            commands:
+              - dbt deps --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt seed --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files --profile ${var.dbt_profile}
+              - dbt run --select tag:victron_batch --vars '{"tgv_catalog":"${var.tgv_catalog}"}' --profile ${var.dbt_profile} --profiles-dir /Workspace/Users/leonardo@getproductized.nl/.bundle/energydataexchange-data/${bundle.target}/files
+            catalog: ${var.tgv_catalog}
+            schema: gold
+            warehouse_id: ${var.sql_warehouse_id}
+            source: WORKSPACE
+          environment_key: dbt-default
+        - task_key: b06_update_connection_metadata
+          depends_on:
+            - task_key: b04_silver2gold
+          notebook_task:
+            notebook_path: ../src/clients/b06_update_connection_metadata.py
+            base_parameters:
+              connector: victron_api
+            source: WORKSPACE
+      tags:
+        client: tgv
+        brand: victron
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: batch
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.tgv_catalog}
+        - name: volume_name
+          default: victron_inverters_batch
+        - name: bronze_table_name_2623
+          default: victron_2623_batch
+        - name: bronze_table_name_2611
+          default: victron_2611_batch
+        - name: silver_table_name_2623
+          default: victron_2623_batch
+        - name: silver_table_name_2611
+          default: victron_2611_batch
+      environments:
+        - environment_key: dbt-default
+          spec:
+            environment_version: 2
+            dependencies:
+              - dbt-databricks>=1.0.0,<2.0.0
+      performance_target: PERFORMANCE_OPTIMIZED
+
+    tgv_sites_and_spaces_metadata_job:
+      name: tgv sites and spaces metadata job
+      description: >-
+        Weekly metadata refresh job for TGV sites and spaces (Haystack ontology compliance).
+
+        This job:
+        1. Fetches site metadata from Victron, SolarEdge, and Growatt APIs
+        2. Merges data into dim_site table (Haystack-compliant schema)
+        3. Generates default spaces for each site (one space per site)
+        4. Merges data into dim_space table (Haystack-compliant schema)
+
+        Runs weekly on Mondays at 00:00 UTC to keep site and space reference data fresh.
+      email_notifications:
+        on_failure: ${var.notification_emails}
+      notification_settings:
+        no_alert_for_skipped_runs: true
+        no_alert_for_canceled_runs: true
+      schedule:
+        quartz_cron_expression: 0 0 0 ? * MON
+        timezone_id: UTC
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: refresh_sites_and_spaces
+          notebook_task:
+            notebook_path: ../src/clients/tgv/batch/tgv_sites_and_spaces_metadata.py
+            source: WORKSPACE
+          max_retries: 3
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+      tags:
+        client: tgv
+        dev: ${var.developer_tag}
+        environment: ${var.environment_name}
+        process_type: metadata
+      queue:
+        enabled: true
+      parameters:
+        - name: catalog_name
+          default: ${var.tgv_catalog}
+      performance_target: PERFORMANCE_OPTIMIZED
